@@ -14,6 +14,7 @@ public class CarShopApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CarShopApplication.class, args);
 		log.info("--------------Hello world-------------");
+		log.info("--------------Comit----------------------");
 	}
 
 }
