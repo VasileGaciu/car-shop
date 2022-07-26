@@ -8,13 +8,11 @@ import com.car.shop.entity.Users;
 import com.car.shop.repository.UsersRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -57,28 +55,13 @@ public class UsersService implements UserDetailsService {
 
     public String saveUser(Users user){
       user.setPassword(passwordEncoder.encode(user.getPassword()));
-      user.setRole("user");
       usersRepository.save(user);
       return "User saved";
     }
 
-    public String saveUserByAdmin(Users user){
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        usersRepository.save(user);
-        return "User saved";
-    }
-
-    public String deleteCurrentUser(Users user) throws UsernameNotFoundException{
-      if(!usersRepository.existsByUsername(user.getUsername())){
-         throw new UsernameNotFoundException("User not found");
-      }
-      usersRepository.delete(user);
-      return "Successfully deleted";
-    }
-
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
           String authorizationHeader = request.getHeader(AUTHORIZATION);
-        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        if(!authorizationHeader.isEmpty() && authorizationHeader.startsWith("Bearer ")) {
             try {
                 String refreshToken = authorizationHeader.substring("Bearer ".length());
                 Algorithm algorithm = Algorithm.HMAC256("secret".getBytes());

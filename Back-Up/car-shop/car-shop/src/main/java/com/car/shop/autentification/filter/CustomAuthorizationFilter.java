@@ -28,49 +28,46 @@ import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Log4j2
-public class CustomAuthorizationFilter extends OncePerRequestFilter {
+public class CustomAuthorizationFilter extends OncePerRequestFilter{
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        boolean noAuth = !request.getServletPath().startsWith("/users") ||
-                request.getServletPath().equals("/users/token/refresh") ||
-                request.getServletPath().equals("/users/signup") ||
-                request.getServletPath().equals("/login");
-        if (noAuth) {
+        if(!request.getServletPath().startsWith("/users") || request.getServletPath().equals("/users/token/refresh")) {
             filterChain.doFilter(request, response);
             log.info("------------cars-----------");
-        } else {
-            log.info("-----------fail here-----------");
-            String autorizationHeader = request.getHeader(AUTHORIZATION);
-            if (autorizationHeader != null && autorizationHeader.startsWith("Bearer ")) {
-                try {
-                    String token = autorizationHeader.substring("Bearer ".length());
-                    Algorithm algorithm = Algorithm.HMAC256("secret".getBytes());
-                    JWTVerifier verifier = JWT.require(algorithm).build();
-                    DecodedJWT decodedJWT = verifier.verify(token);
-                    String username = decodedJWT.getSubject();
-                    String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
+        }
+        else{
+            String autorizationHeader =  request.getHeader(AUTHORIZATION);
+            if(!autorizationHeader.isEmpty() && autorizationHeader.startsWith("Bearer ")){
+                try{
+                String token = autorizationHeader.substring("Bearer ".length());
+                Algorithm algorithm = Algorithm.HMAC256("secret".getBytes());
+                JWTVerifier verifier = JWT.require(algorithm).build();
+                DecodedJWT decodedJWT = verifier.verify(token);
+                String username = decodedJWT.getSubject();
+                String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
                     Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                    stream(roles).forEach(role -> {
-                        authorities.add(new SimpleGrantedAuthority(role));
-                    });
+                   stream(roles).forEach(role -> {
+                       authorities.add(new SimpleGrantedAuthority(role));
+                   });
                     UsernamePasswordAuthenticationToken authenticationToken =
                             new UsernamePasswordAuthenticationToken(username, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                     filterChain.doFilter(request, response);
                     log.info("--------Success----------");
-                } catch (Exception exception) {
-                    log.error("-------------Error loggin in------------", exception.getMessage());
-                    response.setHeader("Error", exception.getMessage());
-                    response.setStatus(BAD_REQUEST.value());
+                }
+                catch (Exception exception){
+                 log.error("-------------Error loggin in------------", exception.getMessage());
+                 response.setHeader("Error", exception.getMessage());
+                 response.setStatus(BAD_REQUEST.value());
                     Map<String, String> error = new HashMap<>();
                     error.put("Error", exception.getMessage());
                     response.setContentType(APPLICATION_JSON_VALUE);
-                    new ObjectMapper().writeValue(response.getOutputStream(), error);
+                    new ObjectMapper().writeValue(response.getOutputStream(),error);
                 }
-            } else {
+            }else{
                 filterChain.doFilter(request, response);
                 log.info("---------------OK--------------");
             }
